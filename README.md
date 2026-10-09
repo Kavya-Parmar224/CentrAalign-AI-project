@@ -7,13 +7,14 @@ An autonomous AI agent that accepts natural-language tasks and executes them end
 ## Demo
 
 Given the task:
-> "Find the latest invoice from Company X, extract the amount and due date, enter it into our internal system, and tell me once it's done."
+> "Check the onboarding ticket, navigate to the provisioning page, grant them GitHub access, and mark the ticket as resolved."
 
 The agent will:
-1. Navigate to the company portal
-2. Locate the invoice from Company X
-3. Extract the amount and due date
-4. Navigate to the data-entry form and submit the details
+1. Navigate to the IT ticketing dashboard
+2. Locate the onboarding ticket and extract the user's email
+3. Navigate to the provisioning portal
+4. Select the user and grant GitHub access
+5. Return to the ticket and mark it as resolved
 5. Verify the entry was saved
 6. Return a verified summary with screenshot evidence
 
@@ -68,7 +69,7 @@ User (natural language task)
 | HTTP tool | `agent/tools/http_tool.py` | Generic HTTP requests |
 | Human-in-loop | `agent/tools/ask_human_tool.py` | Pause and ask user via WebSocket |
 | API server | `api/server.py` | FastAPI + WebSocket event streaming |
-| Demo app | `demo_app/app.py` | Simulated company portal with invoices |
+| Demo app | `demo_app/app.py` | Simulated internal IT Helpdesk portal |
 | Frontend | `frontend/` | React + Vite live execution trace UI |
 
 ---
@@ -79,7 +80,7 @@ User (natural language task)
 
 - Python 3.11+
 - Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com)
+- A [Google Gemini API key](https://aistudio.google.com/)
 
 ### 1. Clone and install Python dependencies
 
@@ -109,7 +110,7 @@ cd ..
 
 ```bash
 cp .env.example .env
-# Edit .env and set your ANTHROPIC_API_KEY
+# Edit .env and set your GEMINI_API_KEY
 ```
 
 ### 4. Run
@@ -141,20 +142,14 @@ cd frontend && npm run dev
 
 ## Example Tasks to Try
 
-1. **Invoice lookup:**
-   > "Find the latest invoice from Company X in our system and tell me the amount and due date."
+1. **Ticket resolution:**
+   > "Check the onboarding ticket, navigate to the provisioning page, grant them GitHub access, and mark the ticket as resolved."
 
-2. **Data entry:**
-   > "Check all overdue invoices and enter a summary of each into the data records."
+2. **Information lookup:**
+   > "Find the open high-priority ticket, look up the user's manager via the API, and write a summary file."
 
-3. **Mark paid:**
-   > "Find the invoice from Acme Corp that's overdue and mark it as paid."
-
-4. **Multi-step:**
-   > "Find the invoice with the highest amount, extract its details, and create a data entry record for it."
-
-5. **API + browser:**
-   > "Use the API to get all pending invoices, then for each one, navigate to its page and verify the due date matches the API response."
+3. **Data summarization:**
+   > "Get all open tickets via the API and summarize the current workload."
 
 ---
 
@@ -168,7 +163,7 @@ Each iteration:
 3. **Observe** — Tool result is appended to conversation history; key facts extracted to memory
 4. Loop until `TASK_COMPLETE` signal or max iterations
 
-The conversation history is maintained as a proper Anthropic multi-turn dialogue, so the model always has full context of what it has done and observed.
+The conversation history is maintained as a proper multi-turn dialogue, so the model always has full context of what it has done and observed.
 
 ### Retry Logic
 
@@ -178,7 +173,7 @@ The conversation history is maintained as a proper Anthropic multi-turn dialogue
 
 ### Memory System
 
-- **Working memory** — in-process dict for fast key-value storage (e.g. `invoice_id: 1001`)
+- **Working memory** — in-process dict for fast key-value storage (e.g. `ticket_id: T-103`)
 - **Fact extraction** — regex-based extraction of amounts ($), dates, IDs from tool outputs
 - **Episodic storage** — SQLite log of every trace entry for auditability
 - **Context injection** — memory snapshot injected into conversation every 5 steps
@@ -223,8 +218,8 @@ Demo purposes — watching the browser navigate is compelling in a live demo. Ca
 **Why Flask for the demo app instead of mocking?**
 A real web app tests real browser automation. Mocking would defeat the purpose of demonstrating that the agent can actually navigate UIs.
 
-**Why Anthropic Claude?**
-claude-3-5-sonnet has excellent tool-use reliability, strong instruction following, and produces well-structured JSON. The tool_use feature maps directly to the agent's action selection.
+**Why Google Gemini 3.1 Flash-Lite?**
+Gemini Flash-Lite is extremely fast and cost-effective, which is perfect for an agent that needs to run rapid multi-step reasoning loops. It reliably follows tool instructions while keeping execution costs very low.
 
 **Why WebSockets for the UI?**
 The agent runs asynchronously (can take 30-120 seconds). WebSocket streaming lets you watch the agent reason and act in real time, which is essential for understanding and debugging.
@@ -236,7 +231,7 @@ The agent runs asynchronously (can take 30-120 seconds). WebSocket streaming let
 - **Single-browser session per task** — no parallelism within a task
 - **No persistent agent identity** — memory is per-task only
 - **Playwright setup required** — users must `playwright install chromium`
-- **API key cost** — long tasks may use many Claude API calls (typically 5-15 per task)
+- **API key cost** — long tasks may use many Gemini API calls (typically 5-15 per task)
 - **No auth support** — cannot log into password-protected sites
 - **Context window** — very long tasks may exceed conversation limits; memory summarization is basic
 - **Screenshot serving** — screenshots identified by filename, not scoped per-task (multi-task concurrent use could mix screenshots)
@@ -260,7 +255,7 @@ The agent runs asynchronously (can take 30-120 seconds). WebSocket streaming let
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| LLM | Anthropic Claude 3.5 Sonnet | claude-3-5-sonnet-20241022 |
+| LLM | Google Gemini 3.1 Flash-Lite | gemini-3.1-flash-lite |
 | Browser | Playwright (Chromium) | ≥1.43 |
 | Backend | FastAPI + Uvicorn | ≥0.110 |
 | WebSockets | FastAPI WebSocket | built-in |
@@ -276,6 +271,6 @@ The agent runs asynchronously (can take 30-120 seconds). WebSocket streaming let
 
 - The "company system" is the local Flask demo app at `localhost:5001`
 - Tasks are single-user (no concurrent task isolation required for this prototype)
-- The Anthropic API is available and the key has sufficient quota
+- The Gemini API is available and the key has sufficient quota
 - Playwright's Chromium is installed locally
 - Tasks complete in reasonable time (under 5 minutes); no background job persistence across server restarts
