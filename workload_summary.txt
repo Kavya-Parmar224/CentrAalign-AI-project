@@ -1,0 +1,11 @@
+Workload Summary:
+Total Open Tickets: 2
+
+Priority Distribution:
+- High: 1
+- Medium: 0
+- Low: 1
+
+Open Tickets:
+- T-101: Need access to AWS Production (Priority: High)
+- T-102: Monitor won't turn on (Priority: Low)
